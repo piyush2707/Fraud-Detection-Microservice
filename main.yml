@@ -1,0 +1,46 @@
+# .github/workflows/main.yml
+name: Build and Push Docker Image
+
+# This workflow runs whenever code is pushed to the 'main' branch
+on:
+  push:
+    branches: [ main ]
+  # Allows manual triggering from the GitHub Actions tab
+  workflow_dispatch:
+
+env:
+  # The name of your Docker image in the registry
+  IMAGE_NAME: fraud-detector-api 
+  # Uses your GitHub username/organization as the registry owner
+  DOCKER_REGISTRY: ghcr.io/${{ github.repository_owner }} 
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    
+    # Give the workflow permission to write to the GitHub Container Registry
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4 # Get your code
+
+    - name: Log in to GitHub Container Registry (GHCR)
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ github.repository_owner }}
+        # GITHUB_TOKEN is a secret automatically provided by GitHub
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-and-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
